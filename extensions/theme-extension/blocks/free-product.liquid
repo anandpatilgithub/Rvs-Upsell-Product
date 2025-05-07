@@ -1,0 +1,295 @@
+<style>
+    /* Toggle switch style */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-switch .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 24px;
+    }
+    .toggle-switch .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+    .toggle-switch input:checked + .slider {
+      background-color: #2196F3;
+    }
+    .toggle-switch input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    /* Checkbox style */
+    .Add-to-cart-checkbox {
+      margin-right: 8px;
+    }
+    .upsell_title p {
+    margin: 0;
+}
+
+.upsell-products .upsell_image img {
+width:100px;
+height:100px
+}
+input.Add-to-cart {
+    background: #fff;
+    padding: 8px;
+    width: 100%;
+    border: 1px solid #000;
+}
+
+input.Add-to-cart:focus-visible {
+    box-shadow: none;
+    outline: none;
+    outline-offset: unset;
+}
+
+input.Add-to-cart:active {
+    /* border-style: none; */
+}
+.variant-select {
+    width: 100%;
+}
+select.variant-select:focus-visible {
+    box-shadow: none;
+    outline: none;
+    outline-offset: unset;
+}
+.upsell-products {
+    display: flex;
+    gap: 20px;
+    border: 1px solid;
+    margin: 10px;
+    padding: 5px;
+}
+.upsell_title {
+    display: flex;
+    flex: 0 70%;
+    justify-content: space-between;
+}
+input.Add-to-cart-checkbox {
+    width: 20px;
+    height: 20px;
+}
+.product-title-varient {
+    flex: 0 80%;
+}
+  </style>
+
+
+
+
+    <div class="rvs-upsell-product">
+      {% comment %} {% assign upsell = product.metafields.custom_bundle.offer_products.value %}
+      {% assign upsell_style = product.metafields.custom_bundle.display_style.value %} 
+      {% assign upsell = product.metafields.custom_bundle.top_product.value %}{% endcomment %}
+      {% assign upsell = product.metafields.custom.top_product.value %}
+  
+
+      {% if upsell != blank %}
+
+        <div class="offer-heading">
+          {{ block.settings.offer_heading }}
+        </div>
+        {% for pro in upsell %}
+          <div class="upsell-products" data-product-id="{{ pro.id }}">
+            <div class="upsell_image">
+              <img src="{{ pro.featured_media | img_url: 'original' }}" width="100" alt="{{ pro.title }}">
+            </div>
+            <div class="upsell_title">
+              <div class="product-title-varient">
+              <p>{{ pro.title }}</p>
+              <p>{{ pro.price | money_with_currency }}</p>
+     {% comment %} {%  assign discount_pro = product.discount %} 
+        {% if discount_pro  %}   
+          <h1>Buy2 Get 20% off</h1>
+          {% endif %} {% endcomment %}
+              {% if pro.variants.size > 1 %}
+               
+                <select
+                  class="variant-select"
+                  name="variant_id_{{ pro.id }}"
+                  data-product-id="{{ pro.id }}"
+                >
+                  {% for variant in pro.variants %}
+                    <option value="{{ variant.id }}">
+                      {{ variant.title }} - {{ variant.price | money_with_currency }}
+                    </option>
+                  {% endfor %}
+                </select>
+               
+              {% else %}
+                <input
+                  type="hidden"
+                  class="variant-select"
+                  name="variant_id_{{ pro.id }}"
+                  value="{{ pro.variants.first.id }}"
+                  data-product-id="{{ pro.id }}"
+                >
+              {% endif %}
+              </div>
+              {% if upsell_style == 'button' %}
+                <form
+                  method="post"
+                  action="/cart/add"
+                  onsubmit="return updateVariantId(event, '{{ pro.id }}')"
+                >
+                  <input
+                    type="hidden"
+                    name="id"
+                    value="{{ pro.variants.first.id }}"
+                    class="dynamic-variant-id"
+                    data-product-id="{{ pro.id }}"
+                  >
+                  <input type="submit" class="Add-to-cart" value="{{ block.settings.addtocart }}">
+                </form>
+
+              {% elsif upsell_style == 'checkbox' %}
+                <label>
+                  <input
+                    type="checkbox"
+                    class="Add-to-cart-checkbox"
+                    data-product-id="{{ pro.id }}"
+                  tt>
+                  {% comment %} Select this product {% endcomment %}
+                </label>
+              {% elsif upsell_style == 'toggle' %}
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    class="Add-to-cart-toggle"
+                    data-product-id="{{ pro.id }}"
+                  >
+                  <span class="slider"></span>
+                </label>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p>No upsell products found.</p>
+      {% endif %}
+    </div>
+
+
+  <script>
+document.addEventListener("DOMContentLoaded", function () {
+const mainSubmitButton = document.querySelector('.product-form__submit');
+
+if (mainSubmitButton) {
+mainSubmitButton.addEventListener('click', async function (e) {
+const selectedVariants = [];
+
+// Collect selected toggles and checkboxes
+document.querySelectorAll('.Add-to-cart-checkbox:checked, .Add-to-cart-toggle:checked')
+.forEach(input => {
+const productId = input.getAttribute('data-product-id');
+
+// Try to find a <select> for this product
+const variantSelect = document.querySelector(`select[name="variant_id_${productId}"]`);
+let variantId;
+
+if (variantSelect) {
+variantId = variantSelect.value;
+} else {
+const hiddenInput = document.querySelector(`input.variant-select[data-product-id="${productId}"]`);
+if (hiddenInput) {
+variantId = hiddenInput.value;
+}
+}
+
+if (variantId) {
+selectedVariants.push({
+id: variantId,
+quantity: 1
+});
+}
+});
+
+// If any upsell products are selected
+if (selectedVariants.length > 0) {
+e.preventDefault(); // Stop default submission
+
+try {
+// Add all selected upsell variants
+for (const item of selectedVariants) {
+await fetch('/cart/add.js', {
+method: 'POST',
+headers: {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+},
+body: JSON.stringify(item)
+});
+}
+
+// After all upsells are added, submit the main product form
+const mainForm = mainSubmitButton.closest('form');
+if (mainForm) mainForm.submit();
+
+} catch (error) {
+console.error("Failed to add upsell products:", error);
+}
+}
+// If no upsells selected, allow normal form submission
+});
+}
+});
+
+      function updateVariantId(event, productId) {
+const variantSelect = document.querySelector(`select[name="variant_id_${productId}"]`);
+const hiddenInput = document.querySelector(`input.dynamic-variant-id[data-product-id="${productId}"]`);
+
+if (variantSelect && hiddenInput) {
+hiddenInput.value = variantSelect.value;
+}
+
+// Allow form to continue submitting
+return true;
+}
+  </script>
+
+
+{% schema %}
+    {
+      "name": "Free Product",
+      "target": "section",
+      "settings": [
+
+      {
+          "type": "text",
+          "id": "offer_heading",
+          "label": "Heading Offer Text"
+
+        },
+        {
+          "type": "text",
+          "id": "addtocart",
+          "label": "Add To Cart",
+          "default": "Add To Cart"
+
+        }
+      ]
+    }
+    {% endschema %}

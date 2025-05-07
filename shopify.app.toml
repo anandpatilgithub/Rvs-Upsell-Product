@@ -1,0 +1,36 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "d0ad4f0b0bf37eea070ed94ce6a408f1"
+application_url = "https://tutorials-others-administrators-lines.trycloudflare.com"
+embedded = true
+name = "RVS Upsell Product "
+handle = "rvs-upsell-product"
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://tutorials-others-administrators-lines.trycloudflare.com/auth/callback",
+  "https://tutorials-others-administrators-lines.trycloudflare.com/auth/shopify/callback",
+  "https://tutorials-others-administrators-lines.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false
